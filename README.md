@@ -1,6 +1,9 @@
 # FSA_PCA9685_Servo_Driver
 A fast, simple and accurate servo driver using the PCA9685.
 ## About
+NOTICE: *This software is **not finished** and not ready for use.
+I'm still writing it.*
+
 The PCA9685 breakout board as designed and sold by Adafriut is a great way to control up to 16 hobby-style servo motors but the existing software drivers I could find were at bet slow and did not offer calibration for as-built assembly. This driver is written in pure python and tries to be as fast and simple as possible.
 
 This driver is based on the driver supplied with varius robots made and sold by Freenove..  Files were cloned from their github repository and used as a starting point for this work
