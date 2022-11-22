@@ -108,7 +108,7 @@ def run_gui():
 
               [sg.HSep()],
 
-              [sg.Radio(' 0', 'CHAN', enable_events=True, key=ch_key[0], s=2, background_color=chan_active_color),
+              [sg.Radio(' 0', 'CHAN', enable_events=True, key=ch_key[0], s=2, background_color=chan_def_color),
                sg.Radio(' 1', 'CHAN', enable_events=True, key=ch_key[1], s=2,  background_color=chan_def_color),
                sg.Radio(' 2', 'CHAN', enable_events=True, key=ch_key[2], s=2,  background_color=chan_def_color),
                sg.Radio(' 3', 'CHAN', enable_events=True, key=ch_key[3], s=2,  background_color=chan_def_color),
@@ -197,6 +197,7 @@ def run_gui():
 
     window['LOWER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
     window['UPPER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
+    window['CH' + str(current_channel)].update(background_color=chan_active_color)
 
     while True:  # Event Loop
         event, values = window.read()
@@ -211,7 +212,6 @@ def run_gui():
             pass
 
         elif event in ch_key:
-            print(event)
             window['CH'+str(current_channel)].update(background_color=chan_def_color)
             current_channel = int(event[2:])
             window[event].update(background_color=chan_active_color)
@@ -219,6 +219,8 @@ def run_gui():
             window['POINT_TABLE'].update(servo_cal[current_channel]['points'])
             window['USEC'].update('')
             window['ANGLE'].update('')
+            window['LOWER_LIMIT'].update(str(servo_cal[current_channel]['angle lower limit']))
+            window['UPPER_LIMIT'].update(str(servo_cal[current_channel]['angle upper limit']))
 
         elif event == 'LOWER_LIMIT':
             pass
@@ -249,8 +251,6 @@ def run_gui():
             pass
 
         elif event == 'ADD':
-            print('add')
-            printcal()
 
             angle_val = float(values['ANGLE'])
             usec_val  = float(values['USEC'])
@@ -262,7 +262,6 @@ def run_gui():
             servo_cal[current_channel]['points'] = pts
 
             window['POINT_TABLE'].update(pts)
-            printcal()
 
         elif event == 'REMOVE':
 
@@ -293,7 +292,6 @@ def run_gui():
             if values['POINT_TABLE'] != []:
                 row_index = values['POINT_TABLE'][0]
                 row = servo_cal[current_channel]['points'][row_index]
-                print(row)
 
                 window['USEC'].update(row[0])
                 window['ANGLE'].update(row[1])
@@ -337,6 +335,12 @@ def run_gui():
                            ) % (len(x), res.slope, res.intercept, res.rvalue)
                 window['MULTI'].update(summary)
 
+                plt_summary = ('number of points = %3d\n' +
+                               'slope = %4.5f\n' +
+                               'intercept = %4.5f\n' +
+                               'rvalue = %4.5f'
+                               ) % (len(x), res.slope, res.intercept, res.rvalue)
+                plt.text((min(x)+max(x))/2.0, min(y), plt_summary)
                 plt.show()
 
 
