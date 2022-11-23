@@ -142,6 +142,16 @@ def run_gui():
 
               [sg.HSep()],
 
+              [sg.Checkbox('Channel Enabled, if checked',
+                           enable_events=True, default=True, key='CHAN_ENABLED',
+                           tooltip='Disable the channel (uncheck) if there is no servo connected.')
+              ],
+
+              [sg.Text('Channel Name'),
+               sg.InputText('', key='CHAN_NAME', enable_events=True,
+                            tooltip='The channel may be given a name, but the name is not used.')
+              ],
+
               [sg.Push(),
                sg.InputText(str(lower_limit), key='LOWER_LIMIT', size=num_input_sz, enable_events=True),
                sg.InputText(str(upper_limit), key='UPPER_LIMIT', size=num_input_sz, enable_events=True),
@@ -198,6 +208,9 @@ def run_gui():
     window['LOWER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
     window['UPPER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
     window['CH' + str(current_channel)].update(background_color=chan_active_color)
+    window['CHAN_NAME'].update(servo_cal[current_channel]['name'])
+    window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
+                                  text_color='black')
 
     while True:  # Event Loop
         event, values = window.read()
@@ -221,6 +234,30 @@ def run_gui():
             window['ANGLE'].update('')
             window['LOWER_LIMIT'].update(str(servo_cal[current_channel]['angle lower limit']))
             window['UPPER_LIMIT'].update(str(servo_cal[current_channel]['angle upper limit']))
+            window['CHAN_NAME'].update(servo_cal[current_channel]['name'])
+
+            ch_active = servo_cal[current_channel]['active']
+            if ch_active:
+                window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
+                                              text_color='black')
+            else:
+                window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
+                                              text_color='red')
+
+
+        elif event == 'CHAN_ENABLED':
+            ch_active = values['CHAN_ENABLED']
+            servo_cal[current_channel]['active'] = ch_active
+
+            if ch_active:
+                window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
+                                              text_color='black')
+            else:
+                window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
+                                              text_color='red')
+
+        elif event == 'CHAN_NAME':
+            servo_cal[current_channel]['name'] = values['CHAN_NAME']
 
         elif event == 'LOWER_LIMIT':
             pass
