@@ -1,7 +1,5 @@
 """User facing applcation to create a calibration file for a set of serves."""
-from typing import Tuple
 import logging
-import math
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
@@ -13,13 +11,23 @@ log = logging.getLogger(__name__)
 servo_cal = dict()
 current_channel = 0
 
+default180_points = [
+    [1000.0, 0.0],
+    [1500.0, 90.0],
+    [2000.0, 180.0]
+]
+
+default270_points = [
+    [1000.0, 0.0],
+    [1500.0, 270.0 / 2.0],
+    [2000.0, 270.0]
+]
+
+default_cal = default180_points
+
+
 def point_key_funct(point):
     return point[0]
-
-
-def printcal():
-    for x in servo_cal:
-        print(servo_cal[x])
 
 
 def active_channels():
@@ -45,12 +53,7 @@ def unique(list1):
 def init_cal_data():
 
     global servo_cal
-
-    default_cal = [
-        (1000.0,   0.0),
-        (1500.0,  90.0),
-        (2000.0, 180.0)
-        ]
+    global default_cal
 
     default_channel = {
         'active': True,
@@ -75,6 +78,8 @@ def run_gui():
     #global cal_data
     global servo_cal
     global current_channel
+    global default180_points
+    global default270_points
 
     init_cal_data()
     print(servo_cal)
@@ -84,24 +89,58 @@ def run_gui():
     lower_limit = 0.0
     upper_limit = 180.0
 
-    default180_points = [
-        (1000.0, 0.0),
-        (1500.0, 90.0),
-        (2000.0, 180.0)
-        ]
-
-    default270_points = [
-        (1000.0, 0.0),
-        (1500.0, 270.0/2.0),
-        (2000.0, 270.0)
-        ]
-
     chan_def_color = 'grey'
     chan_active_color = 'yellow'
 
     ch_key = []
     for i in range(16):
         ch_key.append('CH'+str(i))
+
+    edit_section = [
+
+            [sg.Text('Channel Name'),
+             sg.InputText('', key='CHAN_NAME', enable_events=True,
+                          tooltip='The channel may be given a name, but the name is not used.')
+             ],
+
+            [sg.Push(),
+             sg.InputText(str(lower_limit), key='LOWER_LIMIT', size=num_input_sz, enable_events=True),
+             sg.InputText(str(upper_limit), key='UPPER_LIMIT', size=num_input_sz, enable_events=True),
+             sg.Push()
+             ],
+
+            [sg.Push(),
+             sg.Text('Angle, lower limit', size=num_input_sz),
+             sg.Text('Angle, upper limit', size=num_input_sz),
+             sg.Push()
+             ],
+
+            [sg.Push(),
+             sg.Table(servo_cal[current_channel]['points'],
+                      key='POINT_TABLE',
+                      col_widths=[15, 15, 15],
+                      headings=['   usec   ', '   angle   '],
+                      enable_events=True,
+                      ),
+             sg.Push(),
+             ],
+
+            [sg.Push(),
+             sg.Button('Clear', key='CLEAR'),
+             sg.Button('default 180', key='DEF180'),
+             sg.Button('default 270', key='DEF270'),
+             sg.Push()
+             ],
+
+            [sg.InputText(key='USEC', size=num_input_sz),
+             sg.InputText(key='ANGLE', size=num_input_sz),
+             sg.Button('add', key='ADD'),
+             sg.Button('remove', key='REMOVE')],
+
+            [sg.Text('micro seconds', size=num_input_sz),
+             sg.Text('measured angle', size=num_input_sz)
+             ]
+        ]
 
     layout = [[sg.Radio('degrees', 'UNITS', default=True, key='RADIO_DEG', size=10),
                sg.Radio('radians', 'UNITS', key='RADIO_RAD', size=10)],
@@ -147,48 +186,7 @@ def run_gui():
                            tooltip='Disable the channel (uncheck) if there is no servo connected.')
               ],
 
-              [sg.Text('Channel Name'),
-               sg.InputText('', key='CHAN_NAME', enable_events=True,
-                            tooltip='The channel may be given a name, but the name is not used.')
-              ],
-
-              [sg.Push(),
-               sg.InputText(str(lower_limit), key='LOWER_LIMIT', size=num_input_sz, enable_events=True),
-               sg.InputText(str(upper_limit), key='UPPER_LIMIT', size=num_input_sz, enable_events=True),
-               sg.Push()
-              ],
-
-              [sg.Push(),
-               sg.Text('Angle, lower limit', size=num_input_sz),
-               sg.Text('Angle, upper limit', size=num_input_sz),
-               sg.Push()
-              ],
-
-              [sg.Push(),
-               sg.Table(servo_cal[current_channel]['points'],
-                        key='POINT_TABLE',
-                        col_widths=[15,15,15],
-                        headings=['   usec   ', '   angle   '],
-                        enable_events=True,
-                        ),
-               sg.Push(),
-              ],
-
-              [sg.Push(),
-               sg.Button('Clear', key ='CLEAR'),
-               sg.Button('default 180', key='DEF180'),
-               sg.Button('default 270', key='DEF270'),
-               sg.Push()
-              ],
-
-              [sg.InputText( key='USEC',  size=num_input_sz),
-               sg.InputText( key='ANGLE', size=num_input_sz),
-               sg.Button('add', key='ADD'),
-               sg.Button('remove', key='REMOVE')],
-
-              [sg.Text('micro seconds', size=num_input_sz),
-               sg.Text('measured angle', size=num_input_sz)
-              ],
+              [sg.pin(sg.Column(edit_section, key='EDIT_SECTION'))],
 
               [sg.HSep()],
 
@@ -237,24 +235,30 @@ def run_gui():
             window['CHAN_NAME'].update(servo_cal[current_channel]['name'])
 
             ch_active = servo_cal[current_channel]['active']
+            window['EDIT_SECTION'].update(visible=ch_active)
+
             if ch_active:
                 window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
                                               text_color='black')
             else:
                 window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
                                               text_color='red')
-
 
         elif event == 'CHAN_ENABLED':
             ch_active = values['CHAN_ENABLED']
             servo_cal[current_channel]['active'] = ch_active
+            window['EDIT_SECTION'].update(visible=ch_active)
 
             if ch_active:
                 window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
                                               text_color='black')
+                # for elem in ['POINT_TABLE', 'LOWER_LIMIT']:
+                #   window[elem].update(visible=True)
             else:
                 window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
                                               text_color='red')
+                # for elem in ['POINT_TABLE', 'LOWER_LIMIT']:
+                #   window[elem].update(visible=False)
 
         elif event == 'CHAN_NAME':
             servo_cal[current_channel]['name'] = values['CHAN_NAME']
@@ -292,7 +296,7 @@ def run_gui():
             angle_val = float(values['ANGLE'])
             usec_val  = float(values['USEC'])
 
-            servo_cal[current_channel]['points'].append((usec_val, angle_val))
+            servo_cal[current_channel]['points'].append([usec_val, angle_val])
 
             pts = unique(servo_cal[current_channel]['points'])
             pts.sort(key=point_key_funct)

@@ -1,68 +1,59 @@
 """control a set of hobby servos using PCA9685"""
 
-import math
+import logging
+import yaml
+import numpy as np
 import pca9685
 
-class servo:
+class Servo:
 
 	def __init__(self,log:bool=False):
 		self.log = log
-		self.angles = [0.0, 0.0, 0.0, 0.0,
-					   0.0, 0.0, 0.0, 0.0,
-					   0.0, 0.0, 0.0, 0.0,
-					   0.0, 0.0, 0.0, 0.0]
 
-		self.active = [False. False, False, False,
-					   False. False, False, False,
-					   False. False, False, False,
-					   False. False, False, False]
+		self.pca = pca9685.PCA9685
 
-		self.scale = [1.0, 1.0, 1.0, 1.0,
-					  1.0, 1.0, 1.0, 1.0,
-					  1.0, 1.0, 1.0, 1.0,
-					  1.0, 1.0, 1.0, 1.0]
+		active_list      = []
+		names            = []
+		slope_list       = []
+		intercept_list   = []
+		lower_limit_list = []
+		upper_limit_list = []
 
-		self.bias =  [0.0, 0.0, 0.0, 0.0,
-					  0.0, 0.0, 0.0, 0.0,
-					  0.0, 0.0, 0.0, 0.0,
-					  0.0, 0.0, 0.0, 0.0]
+		with open('servo_cal.yaml', mode="rt", encoding="utf-8") as file:
+			cal_data = yaml.safe_load(file)
 
+		for chan in cal_data:
+			active_list.append(cal_data[chan]['active'])
+			names.append(cal_data[chan]['name'])
+			slope_list.append(cal_data[chan]['slope'])
+			intercept_list.append(cal_data[chan]['intercept'])
+			lower_limit_list.append(cal_data[chan]['angle lower limit'])
+			upper_limit_list.append(cal_data[chan]['angle upper limit'])
 
-	def set_active(self, channel:int, state:bool=True):
-		self.active[channel] = state
-
-	def setup_servo(self, channel:int,
-
-					"""NOTE.  I have decides to use a leave squares fit of a linear function"""
-
-			  		state:bool=True,
-			  		range_deg:float=180.0,	# servo's nominal range
-			  		usec_min = 1000.0,
-			  		usec_max = 2000.0,
-			  		usec_at_calibration,
-			  		radians_at_calibration):
-
-		self.set_active(channel, state)
-
-		range_radian = range_deg * (math.pi / 180.0)
-		range_usec = usec_max - usec_min
-		usec_per_radian = range_usec / range_radian
-
-	def set_radian(self, channel:int, rad:float):
-		self.angles[channel] = rad
-
-	def set_radian_range(self, start_channel:int, rads):
-		end = start_channel + len(rads)
-		self.angles[start_channel:end]=rads
-
-	def write_all(self):
-		pwm = (self.scale * self.angles) + self.bias
-		for channel in range(16):
-			if self.active[channel]:
-				pca.write(channel, pwm[channel])
+		self.active      = np.array(active_list)
+		self.names       = names
+		self.slope       = np.array(slope_list)
+		self.intercept   = np.array(intercept_list)
+		self.lower_limit = np.array(lower_limit_list)
+		self.upper_limit = np.array(upper_limit_list)
 
 
-	def print_state(self):
-		print('angles ',self.angles)
-		print('angles ',self.active)
+	def move_16_radian(self, radians):
+		clipped = np.amin(np.amax(radians, self.lower_limit), self.upper_limit)
+		usecs = (self.slope * clipped) + self.intercept
+		self.pca.goto_16_usec(usecs)
 
+	def move_16_radian_nolimit(self, radians):
+		usecs = (self.slope * radians) + self.intercept
+		self.pca.goto_16_usec(usecs)
+
+
+	def move_radian(self, channel_number, radian):
+		clipped = min(max(radian, self.lower_limit[channel_number]), self.upper_limit[channel_number])
+		usec = (self.slope[channel_number] * clipped) + self.intercept[channel_number]
+		self.pca.goto_usec(usec)
+
+
+	def move_radian_nolimit(self, channel_number, radian):
+		usec = (self.slope[channel_number] * radian) + self.intercept[channel_number]
+		pca.goto_usec(usec)
