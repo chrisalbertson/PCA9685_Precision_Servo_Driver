@@ -3,7 +3,7 @@
 import time
 import math
 import smbus
-
+from collections.abc import Sequence
 
 class PCA9685:
 
@@ -22,9 +22,11 @@ class PCA9685:
     __ALLLED_OFF_L       = 0xFC
     __ALLLED_OFF_H       = 0xFD
 
-    def __init__(self, address: int = 0x40,
-                       bus_frequency: float = 50.0,
-                       active_channels: list = range(16)):
+
+    def __init__(self,
+                 address: int = 0x40,
+                 bus_frequency: float = 50.0,
+                 active_channels: list[int] = range(16)):
 
         self.bus = smbus.SMBus(1)
         self.address = address
@@ -76,28 +78,21 @@ class PCA9685:
         self.setPWM(channel, 0, int(pulse))
 
 
-    def goto_usec(self, channel, usec):
+    def goto_usec(self, channel: int, usec: float) -> None:
 
         # self.setServoPulse(channel, usec)
-        off = int(usec*4096/20000)
-        chanx4 = 4 * channel
+        off: int = int(usec*4096/20000)
+        chanx4: int = 4 * channel
         self.write(self.__LED0_ON_L  + chanx4, 0)
         self.write(self.__LED0_ON_H  + chanx4, 0)
         self.write(self.__LED0_OFF_L + chanx4, off & 0xFF)
         self.write(self.__LED0_OFF_H + chanx4, off >> 8)
 
-    def goto_16_usec_x(self, usec_array):
-        for chan_indx, usec in enumerate(usec_array):
-            self.goto_usec(chan_indx, usec)
 
-    def goto_16_usec_x(self, usec_array):
-        for chan_indx in range(16):
-            self.goto_usec(chan_indx, usec_array[chan_indx])
-
-    def goto_16_usec(self, usec_array):
+    def goto_16_usec(self, usec_array: Sequence[float]  ) -> None:
         for chan_indx in self.active_channels:
-            off = int(usec_array[chan_indx] * 4096 / 20000)
-            chanx4 = 4 * chan_indx
+            off: int = int(usec_array[chan_indx] * 4096 / 20000)
+            chanx4: int = 4 * chan_indx
             self.write(self.__LED0_ON_L  + chanx4, 0)
             self.write(self.__LED0_ON_H  + chanx4, 0)
             self.write(self.__LED0_OFF_L + chanx4, off & 0xFF)

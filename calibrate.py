@@ -350,6 +350,10 @@ def run_gui():
                 y = pnts[:,0]   # Pulse Width in microseconds
                 res = stats.linregress(x, y)
 
+                servo_cal[current_channel]['intercept'] = float(res.intercept)
+                servo_cal[current_channel]['slope']     = float(res.slope)
+                servo_cal[current_channel]['rvalue']    = float(res.rvalue)
+
                 plt.clf()
                 plt.plot(x, y, 'o', label='calibration points')
                 plt.plot(x, res.intercept + res.slope * x, 'r', label='fitted line')
@@ -392,6 +396,23 @@ def run_gui():
 
         elif event == 'SAVE':
             with open('servo_cal.yaml', mode="wt", encoding="utf-8") as file:
+
+                for ch in range(16):
+                    pnts = np.array(servo_cal[ch]['points'])
+
+                    if len(pnts) >= 2:
+                        x = pnts[:, 1]  # Angles
+                        y = pnts[:, 0]  # Pulse Width in microseconds
+                        res = stats.linregress(x, y)
+
+                        servo_cal[ch]['intercept'] = float(res.intercept)
+                        servo_cal[ch]['slope']     = float(res.slope)
+                        servo_cal[ch]['rvalue']    = float(res.rvalue)
+                        servo_cal[ch]['valid fit'] = True
+                    else:
+                        servo_cal[ch]['active']    = False
+                        servo_cal[ch]['valid fit'] = False
+
                 yaml.dump(servo_cal, file)
 
 

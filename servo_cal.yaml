@@ -2,7 +2,7 @@
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo0
   points:
   - &id001
@@ -15,200 +15,200 @@
     - 2000.0
     - 180.0
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 1:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
-  name: servo1 1
+  intercept: 1000.0
+  name: servo1
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 2:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
-  name: servo2 2
+  intercept: 1000.0
+  name: servo2
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 3:
-  active: false
+  active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo3
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 4:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo4
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 5:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo5
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 6:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo6
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 7:
-  active: false
+  active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo7
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 8:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo8
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 9:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo9
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 10:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo10
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 11:
-  active: false
+  active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo11
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 12:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo12
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 13:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo13
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 14:
   active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo14
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
 15:
-  active: false
+  active: true
   angle lower limit: 0.0
   angle upper limit: 180.0
-  intercept: -180.0
+  intercept: 1000.0
   name: servo15
   points:
   - *id001
   - *id002
   - *id003
   rvalue: 1.0
-  slope: 0.5
+  slope: 5.555555555555555
   valid fit: true
