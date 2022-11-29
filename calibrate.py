@@ -1,5 +1,7 @@
 """User facing applcation to create a calibration file for a set of serves."""
 import logging
+import math
+
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,24 +9,67 @@ from scipy import stats
 import PySimpleGUI as sg
 log = logging.getLogger(__name__)
 
-# Tis is the dictionary that is written as a YAML file.
+# This is the dictionary that is written as a YAML file.
 servo_cal = dict()
 current_channel = 0
+units = {
+    '-RAD-': {'sgtext': 'Radians'},
+    '-DEG-': {'sgtext': 'Degrees'}
+    }
+current_units = '-DEG-'
+
 
 default180_points = [
     [1000.0, 0.0],
-    [1500.0, 90.0],
-    [2000.0, 180.0]
-]
+    [1500.0, math.radians(90.0)],
+    [2000.0, math.radians(180.0)]
+    ]
 
 default270_points = [
     [1000.0, 0.0],
-    [1500.0, 270.0 / 2.0],
-    [2000.0, 270.0]
-]
+    [1500.0, math.radians(270.0 / 2.0)],
+    [2000.0, math.radians(270.0)]
+    ]
 
 default_cal = default180_points
 
+def to_rad(angle: float) -> float:
+    """Convert and angle whatever is the current unit to radians"""
+
+    if current_units == '-DEG-':
+        rad = math.radians(angle)
+    elif current_units == '-RAD-':
+        rad = angle
+    else:
+        raise ValueError
+
+    return rad % (2.0 * math.pi)
+
+
+def from_deg(deg: float) -> float:
+    """Convert and angle from degrees to whatever is the current unit"""
+
+    if current_units == '-DEG-':
+        current = deg
+    elif current_units == '-RAD-':
+        current = math.radians(deg)
+    else:
+        raise ValueError
+
+    return current
+
+
+def from_rad(rad: float) -> float:
+    """Convert and angle from radians to whatever is the current unit"""
+
+    if current_units == '-DEG-':
+        current = math.degrees(rad)
+    elif current_units == '-RAD-':
+        current = rad
+    else:
+        raise ValueError
+
+    return current
 
 def point_key_funct(point):
     return point[0]
@@ -50,6 +95,7 @@ def unique(list1):
             unique_list.append(x)
     return unique_list
 
+
 def init_cal_data():
 
     global servo_cal
@@ -57,13 +103,13 @@ def init_cal_data():
 
     default_channel = {
         'active': True,
-        'valid fit': True,
+        'valid fit': False,
         'name': '',
         'angle lower limit':   0.0,
-        'angle upper limit': 180.0,
-        'slope': 0.5,
-        'intercept': -180.0,
-        'rvalue': 1.0,
+        'angle upper limit': math.radians(180.0),
+        'slope': 0.0,
+        'intercept': 0.0,
+        'rvalue': 0.0,
         'points': []
         }
 
@@ -72,22 +118,28 @@ def init_cal_data():
         default_channel['points'] = default_cal.copy()
         servo_cal[ch_indx] = default_channel.copy()
 
+def points_current(points: list) -> list:
+    disp = []
+    for pnt in points:
+        disp.append([pnt[0], from_rad(pnt[1])])
+    return disp
+
 
 def run_gui():
 
-    #global cal_data
     global servo_cal
     global current_channel
     global default180_points
     global default270_points
+    global units
+    global current_units
 
     init_cal_data()
-    print(servo_cal)
 
-    num_input_sz = 15
+    num_input_sz = 20
 
     lower_limit = 0.0
-    upper_limit = 180.0
+    upper_limit = 0.0
 
     chan_def_color = 'grey'
     chan_active_color = 'yellow'
@@ -97,118 +149,135 @@ def run_gui():
         ch_key.append('CH'+str(i))
 
     edit_section = [
+        [sg.Text('Channel Name'),
+         sg.InputText('', key='CHAN_NAME', enable_events=True,
+                      tooltip='The channel may be given a name, but the name is not used.')
+         ],
 
-            [sg.Text('Channel Name'),
-             sg.InputText('', key='CHAN_NAME', enable_events=True,
-                          tooltip='The channel may be given a name, but the name is not used.')
-             ],
+        [sg.Push(),
+         sg.InputText(str(from_rad(lower_limit)), key='LOWER_LIMIT', size=num_input_sz, enable_events=True),
+         sg.InputText(str(from_rad(upper_limit)), key='UPPER_LIMIT', size=num_input_sz, enable_events=True),
+         sg.Push()
+         ],
 
-            [sg.Push(),
-             sg.InputText(str(lower_limit), key='LOWER_LIMIT', size=num_input_sz, enable_events=True),
-             sg.InputText(str(upper_limit), key='UPPER_LIMIT', size=num_input_sz, enable_events=True),
-             sg.Push()
-             ],
+        [sg.Push(),
+         sg.Text(' ', key='-LL_TXT-', size=num_input_sz),
+         sg.Text(' ', key='-UL_TXT-', size=num_input_sz),
+         sg.Push()
+         ],
 
-            [sg.Push(),
-             sg.Text('Angle, lower limit', size=num_input_sz),
-             sg.Text('Angle, upper limit', size=num_input_sz),
-             sg.Push()
-             ],
+        [sg.Push(),
+         # sg.Table(points_current(servo_cal[current_channel]['points']),
+         sg.Table([],
+                  key='POINT_TABLE',
+                  col_widths=[15, 15, 15],
+                  headings=['   usec   ', '   angle   '],
+                  enable_events=True,
+                  ),
+         sg.Push(),
+         ],
 
-            [sg.Push(),
-             sg.Table(servo_cal[current_channel]['points'],
-                      key='POINT_TABLE',
-                      col_widths=[15, 15, 15],
-                      headings=['   usec   ', '   angle   '],
-                      enable_events=True,
-                      ),
-             sg.Push(),
-             ],
+        [sg.Push(),
+         sg.Button('Clear', key='CLEAR'),
+         sg.Button('default 180', key='DEF180'),
+         sg.Button('default 270', key='DEF270'),
+         sg.Push()
+         ],
 
-            [sg.Push(),
-             sg.Button('Clear', key='CLEAR'),
-             sg.Button('default 180', key='DEF180'),
-             sg.Button('default 270', key='DEF270'),
-             sg.Push()
-             ],
+        [sg.InputText(key='USEC', size=num_input_sz),
+         sg.InputText(key='ANGLE', size=num_input_sz),
+         sg.Button('add', key='ADD'),
+         sg.Button('remove', key='REMOVE')],
 
-            [sg.InputText(key='USEC', size=num_input_sz),
-             sg.InputText(key='ANGLE', size=num_input_sz),
-             sg.Button('add', key='ADD'),
-             sg.Button('remove', key='REMOVE')],
+        [sg.Text('micro seconds', size=num_input_sz),
+         sg.Text(' ', key='-MEASURED_ANGLE-', size=num_input_sz)
+         ]
+    ]
 
-            [sg.Text('micro seconds', size=num_input_sz),
-             sg.Text('measured angle', size=num_input_sz)
-             ]
+    layout = [
+        [sg.Radio(units['-DEG-']['sgtext'], 'UNITS', key='-DEG-', size=10, enable_events=True, default=True),
+         sg.Radio(units['-RAD-']['sgtext'], 'UNITS', key='-RAD-', size=10, enable_events=True)
+        ],
+
+        [sg.HSep()],
+
+        [sg.Radio(' 0', 'CHAN', enable_events=True, key=ch_key[0], s=2, background_color=chan_def_color),
+        sg.Radio(' 1', 'CHAN', enable_events=True, key=ch_key[1], s=2,  background_color=chan_def_color),
+        sg.Radio(' 2', 'CHAN', enable_events=True, key=ch_key[2], s=2,  background_color=chan_def_color),
+        sg.Radio(' 3', 'CHAN', enable_events=True, key=ch_key[3], s=2,  background_color=chan_def_color),
+        sg.VSep(),
+        sg.Radio(' 4', 'CHAN', enable_events=True, key=ch_key[4], s=2,  background_color=chan_def_color),
+        sg.Radio(' 5', 'CHAN', enable_events=True, key=ch_key[5], s=2,  background_color=chan_def_color),
+        sg.Radio(' 6', 'CHAN', enable_events=True, key=ch_key[6], s=2,  background_color=chan_def_color),
+        sg.Radio(' 7', 'CHAN', enable_events=True, key=ch_key[7], s=2,  background_color=chan_def_color)],
+
+        [sg.Radio(' 8', 'CHAN', enable_events=True, key=ch_key[8], s=2,  background_color=chan_def_color),
+        sg.Radio(' 9', 'CHAN', enable_events=True, key=ch_key[9], s=2,  background_color=chan_def_color),
+        sg.Radio('10', 'CHAN', enable_events=True, key=ch_key[10], s=2,  background_color=chan_def_color),
+        sg.Radio('11', 'CHAN', enable_events=True, key=ch_key[11], s=2,  background_color=chan_def_color),
+        sg.VSep(),
+        sg.Radio('12', 'CHAN', enable_events=True, key=ch_key[12], s=2,  background_color=chan_def_color),
+        sg.Radio('13', 'CHAN', enable_events=True, key=ch_key[13], s=2,  background_color=chan_def_color),
+        sg.Radio('14', 'CHAN', enable_events=True, key=ch_key[14], s=2,  background_color=chan_def_color),
+        sg.Radio('15', 'CHAN', enable_events=True, key=ch_key[15], s=2,  background_color=chan_def_color)],
+
+        [sg.HSep()],
+
+        [sg.Push(),
+         sg.Text('Editing Channel Number'),
+         sg.Push()
+        ],
+
+        [sg.Push(),
+         sg.Text(str(current_channel), font=('courier', 24, 'bold'), key='-CHNUM-'),
+         sg.Push()
+        ],
+
+        [sg.HSep()],
+
+        [sg.Checkbox('Channel Enabled, if checked',
+                   enable_events=True, default=True, key='CHAN_ENABLED',
+                   tooltip='Disable the channel (uncheck) if there is no servo connected.')
+        ],
+
+        [sg.pin(sg.Column(edit_section, key='EDIT_SECTION'))],
+
+        [sg.HSep()],
+
+        [sg.Multiline(default_text="",
+                    size=(30,4),
+                    key='MULTI')],
+
+        [sg.Button('Fit', key='FIT'),
+         sg.Push(),
+         sg.Button('Save', key='SAVE'),
+         sg.Button('Quit', key='QUIT')
         ]
+    ]
 
-    layout = [[sg.Radio('degrees', 'UNITS', default=True, key='RADIO_DEG', size=10),
-               sg.Radio('radians', 'UNITS', key='RADIO_RAD', size=10)],
 
-              [sg.HSep()],
-
-              [sg.Radio(' 0', 'CHAN', enable_events=True, key=ch_key[0], s=2, background_color=chan_def_color),
-               sg.Radio(' 1', 'CHAN', enable_events=True, key=ch_key[1], s=2,  background_color=chan_def_color),
-               sg.Radio(' 2', 'CHAN', enable_events=True, key=ch_key[2], s=2,  background_color=chan_def_color),
-               sg.Radio(' 3', 'CHAN', enable_events=True, key=ch_key[3], s=2,  background_color=chan_def_color),
-               sg.VSep(),
-               sg.Radio(' 4', 'CHAN', enable_events=True, key=ch_key[4], s=2,  background_color=chan_def_color),
-               sg.Radio(' 5', 'CHAN', enable_events=True, key=ch_key[5], s=2,  background_color=chan_def_color),
-               sg.Radio(' 6', 'CHAN', enable_events=True, key=ch_key[6], s=2,  background_color=chan_def_color),
-               sg.Radio(' 7', 'CHAN', enable_events=True, key=ch_key[7], s=2,  background_color=chan_def_color)],
-
-              [sg.Radio(' 8', 'CHAN', enable_events=True, key=ch_key[8], s=2,  background_color=chan_def_color),
-               sg.Radio(' 9', 'CHAN', enable_events=True, key=ch_key[9], s=2,  background_color=chan_def_color),
-               sg.Radio('10', 'CHAN', enable_events=True, key=ch_key[10], s=2,  background_color=chan_def_color),
-               sg.Radio('11', 'CHAN', enable_events=True, key=ch_key[11], s=2,  background_color=chan_def_color),
-               sg.VSep(),
-               sg.Radio('12', 'CHAN', enable_events=True, key=ch_key[12], s=2,  background_color=chan_def_color),
-               sg.Radio('13', 'CHAN', enable_events=True, key=ch_key[13], s=2,  background_color=chan_def_color),
-               sg.Radio('14', 'CHAN', enable_events=True, key=ch_key[14], s=2,  background_color=chan_def_color),
-               sg.Radio('15', 'CHAN', enable_events=True, key=ch_key[15], s=2,  background_color=chan_def_color)],
-
-              [sg.HSep()],
-
-              [sg.Push(),
-               sg.Text('Editing Channel Number'),
-               sg.Push()
-              ],
-
-              [sg.Push(),
-               sg.Text(str(current_channel), font=('courier', 24, 'bold'), key='-CHNUM-'),
-               sg.Push()
-              ],
-
-              [sg.HSep()],
-
-              [sg.Checkbox('Channel Enabled, if checked',
-                           enable_events=True, default=True, key='CHAN_ENABLED',
-                           tooltip='Disable the channel (uncheck) if there is no servo connected.')
-              ],
-
-              [sg.pin(sg.Column(edit_section, key='EDIT_SECTION'))],
-
-              [sg.HSep()],
-
-              [sg.Multiline(default_text="",
-                            size=(30,4),
-                           #font='Courier',
-                            key='MULTI')],
-
-              [sg.Button('Fit', key='FIT'),
-               sg.Push(),
-               sg.Button('Save', key='SAVE'),
-               sg.Button('Quit', key='QUIT')
-              ]
-             ]
     window = sg.Window('Servo Calibration', layout, finalize=True)
-
     window['LOWER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
     window['UPPER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
-    window['CH' + str(current_channel)].update(background_color=chan_active_color)
-    window['CHAN_NAME'].update(servo_cal[current_channel]['name'])
-    window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
-                                  text_color='black')
+
+    def update_window(window):
+        window['CH' + str(current_channel)].update(background_color=chan_active_color)
+        window['CHAN_NAME'].update(servo_cal[current_channel]['name'])
+        window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
+                                      text_color='black')
+        unit_txt = units[current_units]['sgtext']
+        window['-LL_TXT-'].update(unit_txt + ', lower limit')
+        window['-UL_TXT-'].update(unit_txt + ', upper limit')
+        window['LOWER_LIMIT'].update(str(from_rad(servo_cal[current_channel]['angle lower limit'])))
+        window['UPPER_LIMIT'].update(str(from_rad(servo_cal[current_channel]['angle upper limit'])))
+        window['-MEASURED_ANGLE-'].update(unit_txt)
+
+        pts = points_current(servo_cal[current_channel]['points'])
+        window['POINT_TABLE'].update(pts)
+        window['USEC'].update('')
+        window['ANGLE'].update('')
+
+    update_window(window)
 
     while True:  # Event Loop
         event, values = window.read()
@@ -216,22 +285,21 @@ def run_gui():
         if event in (None, 'Exit', 'QUIT'):
             break
 
-        elif event == 'RADIO_DEG':
-            pass
-
-        elif event == 'RADIO_RAD':
-            pass
+        elif event in units:
+            current_units = event
+            update_window(window)
 
         elif event in ch_key:
             window['CH'+str(current_channel)].update(background_color=chan_def_color)
             current_channel = int(event[2:])
             window[event].update(background_color=chan_active_color)
             window['-CHNUM-'].update(str(current_channel))
-            window['POINT_TABLE'].update(servo_cal[current_channel]['points'])
+            pts = points_current(servo_cal[current_channel]['points'])
+            window['POINT_TABLE'].update(pts)
             window['USEC'].update('')
             window['ANGLE'].update('')
-            window['LOWER_LIMIT'].update(str(servo_cal[current_channel]['angle lower limit']))
-            window['UPPER_LIMIT'].update(str(servo_cal[current_channel]['angle upper limit']))
+            window['LOWER_LIMIT'].update(str(from_rad(servo_cal[current_channel]['angle lower limit'])))
+            window['UPPER_LIMIT'].update(str(from_rad(servo_cal[current_channel]['angle upper limit'])))
             window['CHAN_NAME'].update(servo_cal[current_channel]['name'])
 
             ch_active = servo_cal[current_channel]['active']
@@ -252,13 +320,9 @@ def run_gui():
             if ch_active:
                 window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
                                               text_color='black')
-                # for elem in ['POINT_TABLE', 'LOWER_LIMIT']:
-                #   window[elem].update(visible=True)
             else:
                 window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
                                               text_color='red')
-                # for elem in ['POINT_TABLE', 'LOWER_LIMIT']:
-                #   window[elem].update(visible=False)
 
         elif event == 'CHAN_NAME':
             servo_cal[current_channel]['name'] = values['CHAN_NAME']
@@ -269,7 +333,7 @@ def run_gui():
         elif event == 'LOWER_LIMIT+FOCUSOUT':
             ll_str = values['LOWER_LIMIT']
             try:
-                ll = float(ll_str)
+                ll = to_rad(float(ll_str))
                 servo_cal[current_channel]['angle lower limit'] = ll
             except (ValueError, TypeError):
                 sg.popup('Lower Limit should be a number', title='ERROR')
@@ -280,7 +344,7 @@ def run_gui():
         elif event == 'UPPER_LIMIT+FOCUSOUT':
             ul_str = values['UPPER_LIMIT']
             try:
-                ul = float(ul_str)
+                ul = to_rad(float(ul_str))
                 servo_cal[current_channel]['angle upper limit'] = ul
             except (ValueError, TypeError):
                 sg.popup   ('Upper Limit should be a number', title='ERROR')
@@ -296,13 +360,13 @@ def run_gui():
             angle_val = float(values['ANGLE'])
             usec_val  = float(values['USEC'])
 
-            servo_cal[current_channel]['points'].append([usec_val, angle_val])
+            servo_cal[current_channel]['points'].append([usec_val, to_rad(angle_val)])
 
             pts = unique(servo_cal[current_channel]['points'])
             pts.sort(key=point_key_funct)
             servo_cal[current_channel]['points'] = pts
 
-            window['POINT_TABLE'].update(pts)
+            window['POINT_TABLE'].update(points_current(pts))
 
         elif event == 'REMOVE':
 
@@ -314,7 +378,7 @@ def run_gui():
                     servo_cal[current_channel]['points'].pop(pt_index)
                     break
 
-            window['POINT_TABLE'].update(servo_cal[current_channel]['points'])
+            window['POINT_TABLE'].update(points_current(servo_cal[current_channel]['points']))
 
         elif event == 'CLEAR':
             servo_cal[current_channel]['points'] = []
@@ -322,11 +386,11 @@ def run_gui():
 
         elif event == 'DEF180':
             servo_cal[current_channel]['points'] = default180_points.copy()
-            window['POINT_TABLE'].update(servo_cal[current_channel]['points'])
+            window['POINT_TABLE'].update(points_current(servo_cal[current_channel]['points']))
 
         elif event == 'DEF270':
             servo_cal[current_channel]['points'] = default270_points.copy()
-            window['POINT_TABLE'].update(servo_cal[current_channel]['points'])
+            window['POINT_TABLE'].update(points_current(servo_cal[current_channel]['points']))
 
         elif event == 'POINT_TABLE':
 
@@ -335,18 +399,19 @@ def run_gui():
                 row = servo_cal[current_channel]['points'][row_index]
 
                 window['USEC'].update(row[0])
-                window['ANGLE'].update(row[1])
+                window['ANGLE'].update(from_rad(row[1]))
 
         elif event == 'FIT':
 
             pnts = np.array(servo_cal[current_channel]['points'])
 
             if len(pnts) >= 2:
-                lower_limit_val = float(values['LOWER_LIMIT'])
-                upper_limit_val = float(values['UPPER_LIMIT'])
+                lower_limit_val = from_rad(servo_cal[current_channel]['angle lower limit'])
+                upper_limit_val = from_rad(servo_cal[current_channel]['angle upper limit'])
 
 
                 x = pnts[:,1]   # Angles
+                x = x * from_rad(1.0)
                 y = pnts[:,0]   # Pulse Width in microseconds
                 res = stats.linregress(x, y)
 
@@ -370,7 +435,7 @@ def run_gui():
                            label='upper limit')
                 plt.legend()
                 plt.title('Fit for Channel Number ' + str(current_channel))
-                plt.xlabel('degrees')
+                plt.xlabel(units[current_units]['sgtext'])
                 plt.ylabel('microseconds')
 
                 summary = ('number of points = %3d\n' +
