@@ -7,6 +7,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 import PySimpleGUI as sg
+import pca9685
+
+pca = pca9685.PCA9685()
+
 log = logging.getLogger(__name__)
 
 # This is the dictionary that is written as a YAML file.
@@ -191,6 +195,10 @@ def run_gui():
 
         [sg.Text('micro seconds', size=num_input_sz),
          sg.Text(' ', key='-MEASURED_ANGLE-', size=num_input_sz)
+         ],
+
+        [sg.Button('Move To', key='-MOVE-'),
+         sg.Push()
          ]
     ]
 
@@ -379,6 +387,13 @@ def run_gui():
                     break
 
             window['POINT_TABLE'].update(points_current(servo_cal[current_channel]['points']))
+
+        elif event == '-MOVE-':
+            try:
+                usec_val  = float(values['USEC'])
+                pca.goto_usec(current_channel, usec_val)
+            except (ValueError, TypeError):
+                sg.popup   ('Microseconds should be a number', title='ERROR')
 
         elif event == 'CLEAR':
             servo_cal[current_channel]['points'] = []

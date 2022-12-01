@@ -26,7 +26,7 @@ class PCA9685:
     def __init__(self,
                  address: int = 0x40,
                  bus_frequency: float = 50.0,
-                 active_channels: list[int] = range(16)):
+                 active_channels: list[int] = [c for c in range(16)]):
 
         self.bus = smbus.SMBus(1)
         self.address = address
