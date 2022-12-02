@@ -171,7 +171,6 @@ def run_gui():
          ],
 
         [sg.Push(),
-         # sg.Table(points_current(servo_cal[current_channel]['points']),
          sg.Table([],
                   key='POINT_TABLE',
                   col_widths=[15, 15, 15],
@@ -188,13 +187,14 @@ def run_gui():
          sg.Push()
          ],
 
+        [sg.Text('micro seconds', size=num_input_sz),
+         sg.Text(' ', key='-MEASURED_ANGLE-', size=num_input_sz)
+         ],
+
         [sg.InputText(key='USEC', size=num_input_sz),
          sg.InputText(key='ANGLE', size=num_input_sz),
          sg.Button('add', key='ADD'),
-         sg.Button('remove', key='REMOVE')],
-
-        [sg.Text('micro seconds', size=num_input_sz),
-         sg.Text(' ', key='-MEASURED_ANGLE-', size=num_input_sz)
+         sg.Button('remove', key='REMOVE')
          ],
 
         [sg.Button('Move To', key='-MOVE-'),
@@ -356,6 +356,7 @@ def run_gui():
                 servo_cal[current_channel]['angle upper limit'] = ul
             except (ValueError, TypeError):
                 sg.popup   ('Upper Limit should be a number', title='ERROR')
+                continue
 
         elif event == 'USEC':
             pass
@@ -365,8 +366,17 @@ def run_gui():
 
         elif event == 'ADD':
 
-            angle_val = float(values['ANGLE'])
-            usec_val  = float(values['USEC'])
+            try:
+                angle_val = float(values['ANGLE'])
+            except (ValueError, TypeError):
+                sg.popup('Angle should be a number', title='ERROR')
+                continue
+
+            try:
+                usec_val = float(values['USEC'])
+            except (ValueError, TypeError):
+                sg.popup('Microseconds should be a number', title='ERROR')
+                continue
 
             servo_cal[current_channel]['points'].append([usec_val, to_rad(angle_val)])
 
@@ -378,8 +388,17 @@ def run_gui():
 
         elif event == 'REMOVE':
 
-            angle_val = float(values['ANGLE'])
-            usec_val  = float(values['USEC'])
+            try:
+                angle_val = float(values['ANGLE'])
+            except (ValueError, TypeError):
+                sg.popup('Angle should be a number', title='ERROR')
+                continue
+
+            try:
+                usec_val = float(values['USEC'])
+            except (ValueError, TypeError):
+                sg.popup('Microseconds should be a number', title='ERROR')
+                continue
 
             for pt_index, pt in enumerate(servo_cal[current_channel]['points']):
                 if pt == (usec_val, angle_val):
@@ -394,6 +413,7 @@ def run_gui():
                 pca.goto_usec(current_channel, usec_val)
             except (ValueError, TypeError):
                 sg.popup   ('Microseconds should be a number', title='ERROR')
+                continue
 
         elif event == 'CLEAR':
             servo_cal[current_channel]['points'] = []

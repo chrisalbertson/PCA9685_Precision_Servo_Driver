@@ -73,7 +73,23 @@ class Servo:
 		"""Move a servo to an angle expressed in radians, with no limit checks."""
 
 		usec = (self.slope[channel_number] * radian) + self.intercept[channel_number]
-		pca.goto_usec(channel_number, usec)
+		self.pca.goto_usec(channel_number, usec)
+
+
+	def move_usec(self, channel_number, usec):
+		"""Move a servo to an angle expressed in microseconds, with no limit checks."""
+
+		self.pca.goto_usec(channel_number, usec)
+
+	def radian_to_usec(self, channel_number, radian) -> float:
+
+		usec = (self.slope[channel_number] * radian) + self.intercept[channel_number]
+		return usec
+
+	def usec_to_radian(self, channel_number, usec) -> float:
+
+		radian =(usec - self.intercept[channel_number]) / self.slope[channel_number]
+		return radian
 
 
 if __name__ == '__main__':
