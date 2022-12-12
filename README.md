@@ -1,23 +1,17 @@
-# FSA_PCA9685_Servo_Driver
-A fast, simple and accurate servo driver using the PCA9685.
-## About
-NOTICE: *This software is **not finished** and not ready for use.
-I'm still writing it.*
+# PCA9685 Precision Servo Driver
 
-The PCA9685 breakout board as designed and sold by Adafriut is a great way to control up to 16 hobby-style servo motors but the existing software drivers I could find were at bit slow and did not offer calibration for as-built assembly. This driver is written in pure python and tries to be as fast and simple as possible.
+This is a driver for R/C servos that are connected to a PCA9685 chip.  The driver is efficient and allows for the servo motion to be calibrated. It also can enforce limits on motion range.
 
-This driver is based on the driver supplied with varius robots made and sold by Freenove..  Files were cloned from their github repository and used as a starting point for this work.
+### Overview
 
-This software was made by Chris Albertson albertson.chris@gmail.com in late 2022.   It is provided for you use in any open source project.  There is no warenty. if it is broken you may keep the pieces or try to repair them yourself.
+R/C hobby servos are not consistent across brands or models.  They have their center points, range of motions and  amount of motion in relation to the pulse width is not constant.    One notable error source occurs because the servo's output shaft has a spline, we can never get the alignment between the servo and the robot part perfect, there is usually an "off by one tooth" assembly error.  With the supplied calibration program, the servos can be commanded to move and then the command and the actual movement are entered into a calibration table.  The table is stored in a file.    Later, when the robot controller is running and using this servo driver, the driver uses the calibration file to compensate for error inherent to the servo and any assembly error cause by the spline or inaccurate parts.  Because the calibration file is made by sending a commanded movement and then measuring how the robot moves, all error is accounted for.
 
-## Features
-1) While not required, the driver assume the user is running a control loop that runs several times per second (perhaps at 20 to 40 Hz) and that all servos will be updated at the same time.  The driver design is optimized for this use case.
-2) A user level GUI application is provided to make the calibration process easy.  Using this app, the servo can be command to any position.  Then the actual angle the robot part moved to can be measured and this data entered into the app.  Any number of calibration points may be entered.  The app uses this data to create a calibration file.
-3) The real-time servo drives uses the data from the calibration file to correct any error inherent t the servo and for as-built error in the robot assembly
-4) All calculations are done using Python's Numy package.  The real-time driver accepts angles in radians and these are directly converted to microseconds using the fitted calibration function.  The calculation is streamlined and made fast be using Numpy fr all calculations
+The calibration file can be created quickly.  A file that uses reasonable defaults is included and can be used.  The user can make a simple customized file by changing a few default values and setting motion limits that are specif to the project.  Perhaps because some servos have a 270 range instead of the usual 180 degree range.   The zero points are also easy to move.     If the user has more time and patience he can command the servo to move to a set of arbitrary angles and measure the actual movement with a protractor.   Any number of these measurements can be made and the software will compute a least squares fit to the data points and use the fitted function to calibrate the servo.  The measured point and fitted function can be displayed on a graph.  This make spotting outliers (measurement errors and typos) easy.
 
-## How to install and use this software
-## Resources.
-other drivers
-https://github.com/dheera/ros-pwm-pca9685/blob/master/pwm_pca9685/src/pca9685_activity.cpp
+The other feature of this driver is efficiency.  As much of the computation as possible is pushed into the calibration and start-up code.  This minimizes the amount of work to be done in real-time.  The servo driver accepts angles in radians in the robot's coordinate system and then directly converts this to pulse width in microseconds.  There is also an option to pass up to 16 angles for 16 servos in one call.    Numpy's vector arithmetic can then be used to advantage to transform all 16 angles to pulse widths and range limits. without need for Python loops and if statements.  If this feature is used, this driver is dramatically more efficient than others.
 
+In a typical robot controller there are some trig functions that compute the desired joint angle in radians.  Then the radians are converted to degrees and then some offset is applied that compensates for how the servos are installed in the robot. Finally this is sent to a servo driver where the degrees are translated to "counts" the determine the with of a PWM pulse.   Then this entire chain of events is repeated for the next servo until all angles are set.     This driver will accommodates the this design but allows a for a faster method.  In the preferred use case, the robot software will still use the same trig functions, but will compute the angles in radians for up to 16 joints.  It would then send an array of all 16 angles to the driver.  The driver then uses a vector math package to translat all 16 angles to "counts" using a separate calibration function for each servo in a single step the commands are sent to all 16 servoes with a single "block write" on the I2C bus.
+
+### Installation and usage
+
+The simplest way to install this driver is to copy all the files into your project's folder.
