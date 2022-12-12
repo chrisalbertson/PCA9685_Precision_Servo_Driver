@@ -23,19 +23,29 @@ units = {
 current_units = '-DEG-'
 
 
-default180_points = [
-    [1000.0, 0.0],
-    [1500.0, math.radians(90.0)],
-    [2000.0, math.radians(180.0)]
-    ]
+default180_points = (
+    [1000.0, math.radians(-90.0)],
+    [1500.0, 0.0],
+    [2000.0, math.radians( 90.0)]
+)
 
-default270_points = [
-    [1000.0, 0.0],
-    [1500.0, math.radians(270.0 / 2.0)],
-    [2000.0, math.radians(270.0)]
-    ]
+default270_points = (
+    [ 500.0, math.radians(-270.0 / 2.0)],
+    [1500.0, 0.0],
+    [2500.0, math.radians(270.0 / 2.0)]
+)
 
 default_cal = default180_points
+
+
+def points_are_close(p1: tuple[float, float], p2: tuple[float, float],
+                     tolerance0: float = 0.001, tolerance1: float = 0.001) -> bool:
+    if (abs(p1[0] - p2[0]) < tolerance0) and   \
+       (abs(p1[1] - p2[1]) < tolerance1):
+        return True
+    else:
+        return False
+
 
 def to_rad(angle: float) -> float:
     """Convert and angle whatever is the current unit to radians"""
@@ -47,7 +57,7 @@ def to_rad(angle: float) -> float:
     else:
         raise ValueError
 
-    return rad % (2.0 * math.pi)
+    return rad
 
 
 def from_deg(deg: float) -> float:
@@ -75,11 +85,13 @@ def from_rad(rad: float) -> float:
 
     return current
 
-def point_key_funct(point):
+def point_key_funct(point: list[float]) -> float:
+    """extract a sort key from a list, pased to sort function."""
     return point[0]
 
 
-def active_channels():
+def active_channels() -> list[int]:
+    """Scan an aray and make a list of i where array[i] == True"""
     global servo_cal
     ch_list = []
     for ch_indx in range(16):
@@ -88,7 +100,8 @@ def active_channels():
     return ch_list
 
 
-def unique(list1):
+def unique(list1: list) -> list:
+    """Find the list of unique elements in a list."""
     # initialize a null list
     unique_list = []
 
@@ -100,7 +113,8 @@ def unique(list1):
     return unique_list
 
 
-def init_cal_data():
+def init_cal_data() -> None:
+    """Sets all channels to a reasonable default."""
 
     global servo_cal
     global default_cal
@@ -109,8 +123,8 @@ def init_cal_data():
         'active': True,
         'valid fit': False,
         'name': '',
-        'angle lower limit':   0.0,
-        'angle upper limit': math.radians(180.0),
+        'usec lower limit': 1000.0,
+        'usec upper limit': 2000.0,
         'slope': 0.0,
         'intercept': 0.0,
         'rvalue': 0.0,
@@ -119,17 +133,39 @@ def init_cal_data():
 
     for ch_indx in range(16):
         default_channel['name']   = 'servo'+str(ch_indx)
-        default_channel['points'] = default_cal.copy()
+        default_channel['points'] = list(default_cal)
         servo_cal[ch_indx] = default_channel.copy()
 
+
 def points_current(points: list) -> list:
+    """Converts the set of cal points from radians to the current display unit"""
     disp = []
     for pnt in points:
         disp.append([pnt[0], from_rad(pnt[1])])
     return disp
 
 
-def run_gui():
+def fit_cal_funtion(chan_num: int) -> None:
+    global servo_cal
+
+    pnts = np.array(servo_cal[chan_num]['points'])
+
+    if len(pnts) >= 2:
+        x = pnts[:, 1]  # Angles
+        y = pnts[:, 0]  # Pulse Width in microseconds
+        res = stats.linregress(x, y)
+
+        servo_cal[chan_num]['intercept'] = float(res.intercept)
+        servo_cal[chan_num]['slope']     = float(res.slope)
+        servo_cal[chan_num]['rvalue']    = float(res.rvalue)
+        servo_cal[chan_num]['valid fit'] = True
+    else:
+        servo_cal[chan_num]['active']    = False
+        servo_cal[chan_num]['valid fit'] = False
+
+
+def run_gui() -> None:
+    """The main function, creates the window and runs the GUI event loop"""
 
     global servo_cal
     global current_channel
@@ -145,8 +181,9 @@ def run_gui():
     lower_limit = 0.0
     upper_limit = 0.0
 
-    chan_def_color = 'grey'
-    chan_active_color = 'yellow'
+    chan_def_color      = 'grey'
+    chan_selected_color = 'yellow'
+    chan_disabled_color = 'red'
 
     ch_key = []
     for i in range(16):
@@ -158,17 +195,30 @@ def run_gui():
                       tooltip='The channel may be given a name, but the name is not used.')
          ],
 
+        [sg.HSep()],
+
         [sg.Push(),
-         sg.InputText(str(from_rad(lower_limit)), key='LOWER_LIMIT', size=num_input_sz, enable_events=True),
-         sg.InputText(str(from_rad(upper_limit)), key='UPPER_LIMIT', size=num_input_sz, enable_events=True),
+         sg.Text('    ', size=6),
+         sg.Text('lower limit', size=num_input_sz),
+         sg.Text('upper limit', size=num_input_sz),
          sg.Push()
          ],
 
         [sg.Push(),
-         sg.Text(' ', key='-LL_TXT-', size=num_input_sz),
-         sg.Text(' ', key='-UL_TXT-', size=num_input_sz),
+         sg.Text('uSec', size=6),
+         sg.InputText(str(lower_limit), key='LOWER_LIMIT', size=num_input_sz, enable_events=True),
+         sg.InputText(str(upper_limit), key='UPPER_LIMIT', size=num_input_sz, enable_events=True),
          sg.Push()
          ],
+
+        [sg.Push(),
+         sg.Text('units', size=6, key='LIMIT_ANGLE_UNITS'),
+         sg.Text('angle', key='LOWER_LIMIT_ANGLE', size=num_input_sz),
+         sg.Text('angle', key='UPPER_LIMIT_ANGLE', size=num_input_sz),
+         sg.Push()
+         ],
+
+        [sg.HSep()],
 
         [sg.Push(),
          sg.Table([],
@@ -199,6 +249,19 @@ def run_gui():
 
         [sg.Button('Move To', key='-MOVE-'),
          sg.Push()
+         ],
+
+        [sg.Text('Adjust zero point, uSec'),
+         sg.InputText(key='-ZERO_POINT-', size=num_input_sz),
+         sg.Button('Set', key='-SET_ZERO-')
+         ],
+
+        [sg.HSep()],
+
+        [sg.Text('move servo, uSec\n(no effect on calibration)'),
+         sg.Slider(range=(500.0, 2500.0), default_value=1500.0,resolution=1.0,orientation='horizontal',
+                   size=(35,20), tick_interval=500.0,
+                   enable_events=True,key='-MOVE_SLIDER-')
          ]
     ]
 
@@ -256,31 +319,30 @@ def run_gui():
                     size=(30,4),
                     key='MULTI')],
 
-        [sg.Button('Fit', key='FIT'),
+        [sg.Button('Plot', key='FIT'),
          sg.Push(),
          sg.Button('Save', key='SAVE'),
          sg.Button('Quit', key='QUIT')
         ]
     ]
 
-
     window = sg.Window('Servo Calibration', layout, finalize=True)
     window['LOWER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
     window['UPPER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
 
     def update_window(window):
-        window['CH' + str(current_channel)].update(background_color=chan_active_color)
+        """Update dynamic data when window needs to be refreshed."""
+        window['CH' + str(current_channel)].update(background_color=chan_selected_color)
         window['CHAN_NAME'].update(servo_cal[current_channel]['name'])
         window['CHAN_ENABLED'].update(servo_cal[current_channel]['active'],
                                       text_color='black')
         unit_txt = units[current_units]['sgtext']
-        window['-LL_TXT-'].update(unit_txt + ', lower limit')
-        window['-UL_TXT-'].update(unit_txt + ', upper limit')
-        window['LOWER_LIMIT'].update(str(from_rad(servo_cal[current_channel]['angle lower limit'])))
-        window['UPPER_LIMIT'].update(str(from_rad(servo_cal[current_channel]['angle upper limit'])))
+        window['LIMIT_ANGLE_UNITS'].update(unit_txt)
+        window['LOWER_LIMIT'].update(str(servo_cal[current_channel]['usec lower limit']))
+        window['UPPER_LIMIT'].update(str(servo_cal[current_channel]['usec upper limit']))
         window['-MEASURED_ANGLE-'].update(unit_txt)
 
-        pts = points_current(servo_cal[current_channel]['points'])
+        pts = points_current(servo_cal[current_channel]['points']).copy()
         window['POINT_TABLE'].update(pts)
         window['USEC'].update('')
         window['ANGLE'].update('')
@@ -300,14 +362,14 @@ def run_gui():
         elif event in ch_key:
             window['CH'+str(current_channel)].update(background_color=chan_def_color)
             current_channel = int(event[2:])
-            window[event].update(background_color=chan_active_color)
+            window[event].update(background_color=chan_selected_color)
             window['-CHNUM-'].update(str(current_channel))
-            pts = points_current(servo_cal[current_channel]['points'])
+            pts = points_current(servo_cal[current_channel]['points']).copy()
             window['POINT_TABLE'].update(pts)
             window['USEC'].update('')
             window['ANGLE'].update('')
-            window['LOWER_LIMIT'].update(str(from_rad(servo_cal[current_channel]['angle lower limit'])))
-            window['UPPER_LIMIT'].update(str(from_rad(servo_cal[current_channel]['angle upper limit'])))
+            window['LOWER_LIMIT'].update(str(servo_cal[current_channel]['usec lower limit']))
+            window['UPPER_LIMIT'].update(str(servo_cal[current_channel]['usec upper limit']))
             window['CHAN_NAME'].update(servo_cal[current_channel]['name'])
 
             ch_active = servo_cal[current_channel]['active']
@@ -341,8 +403,8 @@ def run_gui():
         elif event == 'LOWER_LIMIT+FOCUSOUT':
             ll_str = values['LOWER_LIMIT']
             try:
-                ll = to_rad(float(ll_str))
-                servo_cal[current_channel]['angle lower limit'] = ll
+                ll = float(ll_str)
+                servo_cal[current_channel]['usec lower limit'] = ll
             except (ValueError, TypeError):
                 sg.popup('Lower Limit should be a number', title='ERROR')
 
@@ -352,8 +414,8 @@ def run_gui():
         elif event == 'UPPER_LIMIT+FOCUSOUT':
             ul_str = values['UPPER_LIMIT']
             try:
-                ul = to_rad(float(ul_str))
-                servo_cal[current_channel]['angle upper limit'] = ul
+                ul = float(ul_str)
+                servo_cal[current_channel]['usec upper limit'] = ul
             except (ValueError, TypeError):
                 sg.popup   ('Upper Limit should be a number', title='ERROR')
                 continue
@@ -401,7 +463,7 @@ def run_gui():
                 continue
 
             for pt_index, pt in enumerate(servo_cal[current_channel]['points']):
-                if pt == (usec_val, angle_val):
+                if points_are_close(pt, (usec_val, angle_val)):
                     servo_cal[current_channel]['points'].pop(pt_index)
                     break
 
@@ -420,11 +482,11 @@ def run_gui():
             window['POINT_TABLE'].update([])
 
         elif event == 'DEF180':
-            servo_cal[current_channel]['points'] = default180_points.copy()
+            servo_cal[current_channel]['points'] = list(default180_points)
             window['POINT_TABLE'].update(points_current(servo_cal[current_channel]['points']))
 
         elif event == 'DEF270':
-            servo_cal[current_channel]['points'] = default270_points.copy()
+            servo_cal[current_channel]['points'] = list(default270_points)
             window['POINT_TABLE'].update(points_current(servo_cal[current_channel]['points']))
 
         elif event == 'POINT_TABLE':
@@ -441,8 +503,8 @@ def run_gui():
             pnts = np.array(servo_cal[current_channel]['points'])
 
             if len(pnts) >= 2:
-                lower_limit_val = from_rad(servo_cal[current_channel]['angle lower limit'])
-                upper_limit_val = from_rad(servo_cal[current_channel]['angle upper limit'])
+                lower_limit_val = servo_cal[current_channel]['usec lower limit']
+                upper_limit_val = servo_cal[current_channel]['usec upper limit']
 
 
                 x = pnts[:,1]   # Angles
@@ -457,15 +519,15 @@ def run_gui():
                 plt.clf()
                 plt.plot(x, y, 'o', label='calibration points')
                 plt.plot(x, res.intercept + res.slope * x, 'r', label='fitted line')
-                plt.vlines(lower_limit_val,
-                           ymin=min(y),
-                           ymax=0.8*max(y),
+                plt.hlines(lower_limit_val,
+                           xmin=min(x),
+                           xmax=max(x),
                            linestyles='dashed',
                            colors='green',
                            label='lower limit')
-                plt.vlines(upper_limit_val,
-                           ymin=min(y),
-                           ymax=max(y),
+                plt.hlines(upper_limit_val,
+                           xmin=min(x),
+                           xmax=max(x),
                            linestyles='dashed',
                            label='upper limit')
                 plt.legend()
@@ -495,25 +557,29 @@ def run_gui():
                          title='ERROR')
 
         elif event == 'SAVE':
-            with open('servo_cal.yaml', mode="wt", encoding="utf-8") as file:
+            with open('servo_cal.yaml', mode="wt", encoding="utf-8") as cal_file:
 
                 for ch in range(16):
-                    pnts = np.array(servo_cal[ch]['points'])
+                    fit_cal_funtion(ch)
 
-                    if len(pnts) >= 2:
-                        x = pnts[:, 1]  # Angles
-                        y = pnts[:, 0]  # Pulse Width in microseconds
-                        res = stats.linregress(x, y)
+                yaml.dump(servo_cal, cal_file)
 
-                        servo_cal[ch]['intercept'] = float(res.intercept)
-                        servo_cal[ch]['slope']     = float(res.slope)
-                        servo_cal[ch]['rvalue']    = float(res.rvalue)
-                        servo_cal[ch]['valid fit'] = True
-                    else:
-                        servo_cal[ch]['active']    = False
-                        servo_cal[ch]['valid fit'] = False
+        elif event == '-SET_ZERO-':
+            fit_cal_funtion(current_channel)
+            new_intercept = float(values['-ZERO_POINT-'])
+            delta = new_intercept - servo_cal[current_channel]['intercept']
 
-                yaml.dump(servo_cal, file)
+            new_pts = []
+            for p in servo_cal[current_channel]['points']:
+                new_pts.append([p[0]+delta, p[1]])
+            servo_cal[current_channel]['points'] = new_pts
+
+            fit_cal_funtion(current_channel)
+            update_window(window)
+
+        elif event == '-MOVE_SLIDER-':
+            usec_val = values[event]
+            pca.goto_usec(current_channel, usec_val)
 
 
 if __name__ == "__main__":

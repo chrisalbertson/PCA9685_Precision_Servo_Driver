@@ -19,3 +19,6 @@ This software was made by Chris Albertson albertson.chris@gmail.com in late 2022
 
 ## How to instal and use this software
 ## Resources.
+other drivers
+https://github.com/dheera/ros-pwm-pca9685/blob/master/pwm_pca9685/src/pca9685_activity.cpp
+

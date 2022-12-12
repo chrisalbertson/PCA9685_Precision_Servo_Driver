@@ -1,14 +1,17 @@
 """Manually control the servos using calibrated driver"""
 #import numpy as np
 import math
+import argparse
 import PySimpleGUI as sg
 import servo
 
 
-def main():
+def run_gui(smbus_number: int = 1,
+            noi2c: bool = False) -> None:
+    """Create the window and run the event loop."""
 
     current_chan = 0
-    do_not_move = False
+    do_not_move = noi2c
     mid_usec = 1500.0
 
     last_usec = [mid_usec for i in range(16)]
@@ -48,7 +51,9 @@ def main():
 
     window = sg.Window('Servo Check', layout, finalize=True)
 
-    s = servo.Servo()
+
+    s = servo.Servo(smbus_number=1,
+                    noi2c=noi2c)
 
     while True:  # Event Loop
         event, values = window.read()
@@ -120,4 +125,15 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+
+    parser = argparse.ArgumentParser(description='Move servos using GUI slider interface.')
+
+    parser.add_argument('--smbus', type=int,  default=1,
+                        help='Specifies which bus the PCA9685 is attached to.')
+    parser.add_argument('--noi2c',action="store_const", const=True, default=False,
+                        help='If specified, no data is writen or read from the I2C bus')
+
+    args = parser.parse_args()
+
+    run_gui(smbus_number=args.smbus,
+            noi2c=args.noi2c)

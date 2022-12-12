@@ -10,8 +10,8 @@ s = servo.Servo()
 
 def main():
 
-    midpoint = 90.0
-    peak = 10.0
+    midpoint = math.radians(90.0)
+    peak     = math.radians(10.0)
     angles = np.array([midpoint for i in range(16)])
 
     movement_period = 2.0
@@ -31,7 +31,11 @@ def main():
 
         s.move_16_radian(angles + (peak * math.sin(phase_angle)))
 
-        time.sleep(loop_period - (time.time()-tick))
+        sleep_time = loop_period - (time.time()-tick)
+        if sleep_time < 0.001:
+            print ('Warning, loop overrun, sleep time =', sleep_time)
+            sleep_time = 0.001
+        time.sleep(sleep_time)
 
 if __name__ == '__main__':
     main()
