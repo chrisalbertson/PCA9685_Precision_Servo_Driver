@@ -135,6 +135,7 @@ def init_cal_data() -> None:
         default_channel['name']   = 'servo'+str(ch_indx)
         default_channel['points'] = list(default_cal)
         servo_cal[ch_indx] = default_channel.copy()
+        fit_cal_funtion(ch_indx)
 
 
 def points_current(points: list) -> list:
@@ -162,6 +163,18 @@ def fit_cal_funtion(chan_num: int) -> None:
     else:
         servo_cal[chan_num]['active']    = False
         servo_cal[chan_num]['valid fit'] = False
+
+def usec_to_radian(chan_num: int, usec: float) -> float:
+    global servo_cal
+
+    if servo_cal[chan_num]['valid fit']:
+        slope = servo_cal[chan_num]['slope']
+        inter = servo_cal[chan_num]['intercept']
+        rad = (usec - inter) / slope
+    else:
+        rad = math.nan
+
+    return rad
 
 
 def run_gui() -> None:
@@ -198,21 +211,21 @@ def run_gui() -> None:
         [sg.HSep()],
 
         [sg.Push(),
-         sg.Text('    ', size=6),
+         sg.Text('    ', size=8),
          sg.Text('lower limit', size=num_input_sz),
          sg.Text('upper limit', size=num_input_sz),
          sg.Push()
          ],
 
         [sg.Push(),
-         sg.Text('uSec', size=6),
+         sg.Text('uSec', size=8),
          sg.InputText(str(lower_limit), key='LOWER_LIMIT', size=num_input_sz, enable_events=True),
          sg.InputText(str(upper_limit), key='UPPER_LIMIT', size=num_input_sz, enable_events=True),
          sg.Push()
          ],
 
         [sg.Push(),
-         sg.Text('units', size=6, key='LIMIT_ANGLE_UNITS'),
+         sg.Text('units', size=8, key='LIMIT_ANGLE_UNITS'),
          sg.Text('angle', key='LOWER_LIMIT_ANGLE', size=num_input_sz),
          sg.Text('angle', key='UPPER_LIMIT_ANGLE', size=num_input_sz),
          sg.Push()
@@ -330,6 +343,17 @@ def run_gui() -> None:
     window['LOWER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
     window['UPPER_LIMIT'].bind('<FocusOut>', '+FOCUSOUT')
 
+    def update_limit_angles(window):
+        fit_cal_funtion(current_channel)
+        ll_txt = str(round(from_rad(usec_to_radian(current_channel,
+                                             servo_cal[current_channel]['usec lower limit'])),
+                           3))
+        ul_txt = str(round(from_rad(usec_to_radian(current_channel,
+                                             servo_cal[current_channel]['usec upper limit'])),
+                           3))
+        window['LOWER_LIMIT_ANGLE'].update(ll_txt)
+        window['UPPER_LIMIT_ANGLE'].update(ul_txt)
+
     def update_window(window):
         """Update dynamic data when window needs to be refreshed."""
         window['CH' + str(current_channel)].update(background_color=chan_selected_color)
@@ -340,6 +364,7 @@ def run_gui() -> None:
         window['LIMIT_ANGLE_UNITS'].update(unit_txt)
         window['LOWER_LIMIT'].update(str(servo_cal[current_channel]['usec lower limit']))
         window['UPPER_LIMIT'].update(str(servo_cal[current_channel]['usec upper limit']))
+        update_limit_angles(window)
         window['-MEASURED_ANGLE-'].update(unit_txt)
 
         pts = points_current(servo_cal[current_channel]['points']).copy()
@@ -405,6 +430,7 @@ def run_gui() -> None:
             try:
                 ll = float(ll_str)
                 servo_cal[current_channel]['usec lower limit'] = ll
+                update_limit_angles(window)
             except (ValueError, TypeError):
                 sg.popup('Lower Limit should be a number', title='ERROR')
 
@@ -416,6 +442,7 @@ def run_gui() -> None:
             try:
                 ul = float(ul_str)
                 servo_cal[current_channel]['usec upper limit'] = ul
+                update_limit_angles(window)
             except (ValueError, TypeError):
                 sg.popup   ('Upper Limit should be a number', title='ERROR')
                 continue
