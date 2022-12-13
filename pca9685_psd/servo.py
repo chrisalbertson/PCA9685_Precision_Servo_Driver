@@ -5,8 +5,7 @@ import math
 
 import yaml
 import numpy as np
-import pca9685
-import servo
+import pca9685_psd
 
 
 class Servo:
