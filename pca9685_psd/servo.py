@@ -48,7 +48,7 @@ class Servo:
 
 		if not noi2c:
 			self.pca = PCA9685(smbus_number=smbus_number,
-                                           bus_frequency=60.0,
+                                           bus_frequency=200.0,
 					   active_channels=active_list,
 					   clock_correction=0.920)  # FIXME should not be a constant
 

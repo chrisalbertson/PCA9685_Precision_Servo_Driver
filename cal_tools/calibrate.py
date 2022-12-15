@@ -35,13 +35,14 @@ default270_points = (
     [2500.0, math.radians(270.0 / 2.0)]
 )
 
-default_cal = default180_points
+default_cal = default270_points
 
 
 def points_are_close(p1: tuple[float, float], p2: tuple[float, float],
-                     tolerance0: float = 0.001, tolerance1: float = 0.001) -> bool:
-    if (abs(p1[0] - p2[0]) < tolerance0) and   \
-       (abs(p1[1] - p2[1]) < tolerance1):
+                     tol_usec: float = 0.01, tol_rad: float = 0.001) -> bool:
+
+    if (abs(p1[0] - p2[0]) < tol_usec) and   \
+       (abs(p1[1] - p2[1]) < tol_rad):
         return True
     else:
         return False
@@ -245,8 +246,9 @@ def run_gui() -> None:
 
         [sg.Push(),
          sg.Button('Clear', key='CLEAR'),
-         sg.Button('default 180', key='DEF180'),
-         sg.Button('default 270', key='DEF270'),
+         sg.Button('Default 180', key='DEF180'),
+         sg.Button('Default 270', key='DEF270'),
+         sg.Button('Reverse', key='-REVERSE-'),
          sg.Push()
          ],
 
@@ -256,8 +258,8 @@ def run_gui() -> None:
 
         [sg.InputText(key='USEC', size=num_input_sz),
          sg.InputText(key='ANGLE', size=num_input_sz),
-         sg.Button('add', key='ADD'),
-         sg.Button('remove', key='REMOVE')
+         sg.Button('Add', key='ADD'),
+         sg.Button('Remove', key='REMOVE')
          ],
 
         [sg.Button('Move To', key='-MOVE-'),
@@ -280,7 +282,9 @@ def run_gui() -> None:
 
     layout = [
         [sg.Radio(units['-DEG-']['sgtext'], 'UNITS', key='-DEG-', size=10, enable_events=True, default=True),
-         sg.Radio(units['-RAD-']['sgtext'], 'UNITS', key='-RAD-', size=10, enable_events=True)
+         sg.Radio(units['-RAD-']['sgtext'], 'UNITS', key='-RAD-', size=10, enable_events=True),
+         sg.Push(),
+         sg.Button('Load Cal File', key='-LOADCAL-')
         ],
 
         [sg.HSep()],
@@ -379,6 +383,12 @@ def run_gui() -> None:
 
         if event in (None, 'Exit', 'QUIT'):
             break
+
+        elif event == '-LOADCAL-':
+            with open('servo_cal.yaml', mode="rt", encoding="utf-8") as cfile:
+                servo_cal = yaml.safe_load(cfile)
+
+            update_window(window)
 
         elif event in units:
             current_units = event
@@ -490,7 +500,7 @@ def run_gui() -> None:
                 continue
 
             for pt_index, pt in enumerate(servo_cal[current_channel]['points']):
-                if points_are_close(pt, (usec_val, angle_val)):
+                if points_are_close(pt, (usec_val, to_rad(angle_val))):
                     servo_cal[current_channel]['points'].pop(pt_index)
                     break
 
@@ -514,6 +524,12 @@ def run_gui() -> None:
 
         elif event == 'DEF270':
             servo_cal[current_channel]['points'] = list(default270_points)
+            window['POINT_TABLE'].update(points_current(servo_cal[current_channel]['points']))
+
+        elif event == '-REVERSE-':
+            for pt in servo_cal[current_channel]['points']:
+                if not math.isclose(pt[1], 0.0):
+                    pt[1] *= -1.0
             window['POINT_TABLE'].update(points_current(servo_cal[current_channel]['points']))
 
         elif event == 'POINT_TABLE':
