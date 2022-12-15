@@ -5,7 +5,7 @@ import math
 
 import yaml
 import numpy as np
-import pca9685_psd
+from .pca9685 import PCA9685
 
 
 class Servo:
@@ -47,15 +47,16 @@ class Servo:
 				active_list.append(ch_indx)
 
 		if not noi2c:
-			self.pca = pca9685.PCA9685(smbus_number=smbus_number,
-									   bus_frequency=50.0,
-									   active_channels=active_list)
+			self.pca = PCA9685(smbus_number=smbus_number,
+                                           bus_frequency=60.0,
+					   active_channels=active_list,
+					   clock_correction=0.920)  # FIXME should not be a constant
 
 
 	def move_16_radian(self, radians):
 		"""Move all active servos to angles expressed in radians."""
 
-		usecs = (self.slope * clipped) + self.intercept
+		usecs = (self.slope * radians) + self.intercept
 		usecs_clipped = np.fmin(np.fmax(usecs, self.lower_limit), self.upper_limit)
 
 		self.pca.goto_16_usec(usecs_clipped)
@@ -70,7 +71,7 @@ class Servo:
 	def move_radian(self, channel_number, radian):
 		"""Move a servo to an angle expressed in radians."""
 
-		usec = (self.slope[channel_number] * clipped) + self.intercept[channel_number]
+		usec = (self.slope[channel_number] * radian) + self.intercept[channel_number]
 		usec_clipped = min(max(usec, self.lower_limit[channel_number]), self.upper_limit[channel_number])
 		self.pca.goto_usec(channel_number, usec_clipped)
 

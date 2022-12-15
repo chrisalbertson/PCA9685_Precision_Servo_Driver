@@ -3,9 +3,9 @@
 import time
 import numpy as np
 import math
-import servo
+import pca9685_psd
 
-s = servo.Servo()
+s = pca9685_psd.Servo()
 
 
 def main():

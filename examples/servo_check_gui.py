@@ -3,7 +3,7 @@
 import math
 import argparse
 import PySimpleGUI as sg
-import servo
+import pca9685_psd
 
 
 def run_gui(smbus_number: int = 1,
@@ -31,13 +31,13 @@ def run_gui(smbus_number: int = 1,
 
         [sg.Text('Degrees'),
          sg.Push(),
-         sg.Slider((0,180),default_value=90,orientation='horizontal',
+         sg.Slider((-180,180),default_value=90,orientation='horizontal',
                    enable_events=True,key='-DEG-')
         ],
 
         [sg.Text('Radians'),
          sg.Push(),
-         sg.Slider((0.0, math.pi),resolution=0.01,default_value=math.pi/2.0,orientation='horizontal',
+         sg.Slider((-math.pi, math.pi),resolution=0.01,default_value=math.pi/2.0,orientation='horizontal',
                    enable_events=True,key='-RAD-')
         ],
 
@@ -52,7 +52,7 @@ def run_gui(smbus_number: int = 1,
     window = sg.Window('Servo Check', layout, finalize=True)
 
 
-    s = servo.Servo(smbus_number=1,
+    s = pca9685_psd.Servo(smbus_number=1,
                     noi2c=noi2c)
 
     while True:  # Event Loop

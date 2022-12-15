@@ -7,9 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
 import PySimpleGUI as sg
-import pca9685
+import pca9685_psd
 
-pca = pca9685.PCA9685()
+pca = pca9685_psd.PCA9685()
 
 log = logging.getLogger(__name__)
 

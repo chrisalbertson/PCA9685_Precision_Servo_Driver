@@ -34,13 +34,21 @@ class PCA9685:
     def __init__(self,
                  smbus_number: int = 1,
                  address: int = 0x40,
-                 bus_frequency: float = 50.0,
-                 active_channels: list[int] = [c for c in range(16)]):
+                 bus_frequency: float = 60.0,
+                 active_channels: list[int] = [c for c in range(16)],
+                 clock_correction = 0.920):
 
         self.address = address
         self.active_channels = active_channels.copy()
         self.bus_frequency = bus_frequency
         self.bus_period_usec = (1.0 / bus_frequency) * 1000000.0
+        
+        # To find clock_correction, set it to 1.0 then mesure width of a 1 ms pulse
+        # if the actual width is (say) 0.950 ms then set clock corection to 0.950
+        # when the corect is corect a 1000 uSec pulse will measure to within
+        # about 1% of 1000 uSec.  We can not get closer because "prescale" must
+        # be an integer
+        self.clock_correction = clock_correction
 
 
         self.bus = smbus.SMBus(smbus_number)
@@ -65,12 +73,14 @@ class PCA9685:
     
     def setPWMFreq(self, freq: float) -> None:
         """Set the PWM frequency."""
-
-        prescaleval = 25000000.0    # 25MHz
+	
+        prescaleval = 25000000.0 / self.clock_correction   # 25MHz
         prescaleval /= 4096.0       # 12-bit
         prescaleval /= float(freq)
         prescaleval -= 1.0
         prescale = math.floor(prescaleval + 0.5)
+        
+        # print('PCA9685 using prescale value = ', prescale, '  freq =', freq)
 
         # oldmode = self.read(self.__MODE1)
         #newmode = (oldmode & 0x7F) | 0x10        # sleep

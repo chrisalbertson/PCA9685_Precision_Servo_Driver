@@ -1,66 +1,73 @@
 0:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
-  name: servo0
+  intercept: 1630.0
+  name: shoulder LF
   points:
-  - &id001
-    - 1000.0
+  - - 630.0
+    - -2.356194490192345
+  - - 1630.0
     - 0.0
-  - &id002
-    - 1500.0
-    - 1.5707963267948966
-  - &id003
-    - 2000.0
-    - 3.141592653589793
-  rvalue: 0.9999999999999998
-  slope: 318.30988618379064
+  - - 2630.0
+    - 2.356194490192345
+  rvalue: 1.0
+  slope: 424.41318157838754
+  usec lower limit: 1450.0
+  usec upper limit: 2080.0
   valid fit: true
 1:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo1
   points:
-  - *id001
-  - *id002
-  - *id003
-  rvalue: 0.9999999999999998
-  slope: 318.30988618379064
+  - - 500.0
+    - -2.356194490192345
+  - - 1500.0
+    - 0.0
+  - - 2500.0
+    - 2.356194490192345
+  rvalue: 1.0
+  slope: 424.41318157838754
+  usec lower limit: 960.0
+  usec upper limit: 2150.0
   valid fit: true
 2:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1450.0
   name: servo2
   points:
-  - *id001
-  - *id002
-  - *id003
+  - - 950.0
+    - -1.5707963267948966
+  - - 1450.0
+    - 0.0
+  - - 1950.0
+    - 1.5707963267948966
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1050.0
+  usec upper limit: 2450.0
   valid fit: true
 3:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo3
   points:
-  - *id001
-  - *id002
-  - *id003
+  - &id001
+    - 1000.0
+    - -1.5707963267948966
+  - &id002
+    - 1500.0
+    - 0.0
+  - &id003
+    - 2000.0
+    - 1.5707963267948966
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 4:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo4
   points:
   - *id001
@@ -68,12 +75,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 5:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo5
   points:
   - *id001
@@ -81,12 +88,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 6:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo6
   points:
   - *id001
@@ -94,12 +101,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 7:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo7
   points:
   - *id001
@@ -107,12 +114,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 8:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo8
   points:
   - *id001
@@ -120,12 +127,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 9:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo9
   points:
   - *id001
@@ -133,12 +140,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 10:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo10
   points:
   - *id001
@@ -146,12 +153,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 11:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo11
   points:
   - *id001
@@ -159,12 +166,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 12:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo12
   points:
   - *id001
@@ -172,12 +179,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 13:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo13
   points:
   - *id001
@@ -185,12 +192,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 14:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo14
   points:
   - *id001
@@ -198,12 +205,12 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
 15:
   active: true
-  angle lower limit: 0.0
-  angle upper limit: 3.141592653589793
-  intercept: 1000.0
+  intercept: 1500.0
   name: servo15
   points:
   - *id001
@@ -211,4 +218,6 @@
   - *id003
   rvalue: 0.9999999999999998
   slope: 318.30988618379064
+  usec lower limit: 1000.0
+  usec upper limit: 2000.0
   valid fit: true
