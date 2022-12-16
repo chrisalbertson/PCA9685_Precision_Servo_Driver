@@ -7,8 +7,8 @@ import math
 We can use either the smbus or subus2 package.
 Be sure the used is a member of the i2c group
 """
-#import smbus
-import smbus2 as smbus
+import smbus
+#import smbus2 as smbus
 
 from collections.abc import Sequence
 
@@ -60,10 +60,12 @@ class PCA9685:
         self.setPWMFreq(bus_frequency)
         time.sleep(self.delay)
 
+        self.last_off: list[int] = [0     for i in range(16)]
+        self.on2zero: list[bool] = [False for i in range(16)]
     
     def write(self, reg: int, value: int) -> None:
         """"Writes an 8-bit value to the specified register/address."""
-
+        time.sleep(0.0001)
         self.bus.write_byte_data(self.address, reg, value)
       
     def read(self, reg: int) -> int:
@@ -73,7 +75,7 @@ class PCA9685:
     
     def setPWMFreq(self, freq: float) -> None:
         """Set the PWM frequency."""
-	
+
         prescaleval = 25000000.0 / self.clock_correction   # 25MHz
         prescaleval /= 4096.0       # 12-bit
         prescaleval /= float(freq)
@@ -118,27 +120,43 @@ class PCA9685:
     """
 
     def goto_usec(self, channel: int, usec: float) -> None:
-        """Update the pusle width on the specified channel."""
+        """Update the pulse width on the specified channel."""
 
         # self.setServoPulse(channel, usec)
-        off: int = int(usec * 4096.0 / self.bus_period_usec)
+        off: int = round(usec * (4096.0 / self.bus_period_usec))
         chanx4: int = 4 * channel
-        self.write(self.__LED0_ON_L  + chanx4, 0)
-        self.write(self.__LED0_ON_H  + chanx4, 0)
-        self.write(self.__LED0_OFF_L + chanx4, off & 0xFF)
-        self.write(self.__LED0_OFF_H + chanx4, off >> 8)
-
-
-    def goto_16_usec(self, usec_array: Sequence[float]  ) -> None:
-        """Update the pulse widths on up to 16 channels."""
-
-        for chan_indx in self.active_channels:
-            off: int = int(usec_array[chan_indx] * 4096.0 / self.bus_period_usec)
-            chanx4: int = 4 * chan_indx
+        try:
             self.write(self.__LED0_ON_L  + chanx4, 0)
             self.write(self.__LED0_ON_H  + chanx4, 0)
             self.write(self.__LED0_OFF_L + chanx4, off & 0xFF)
             self.write(self.__LED0_OFF_H + chanx4, off >> 8)
+        except:
+            print('WARNING, goto_usec() write failed')
+
+    def goto_16_usec(self, usec_array: Sequence[float]) -> None:
+        """Update the pulse widths on up to 16 channels."""
+        #print('goto_16_usec', usec_array)
+        for chan_indx in self.active_channels:
+
+            off: int = round(usec_array[chan_indx] * (4096.0 / self.bus_period_usec))
+
+            if self.last_off[chan_indx] == off:
+                continue
+
+            self.last_off[chan_indx] = off
+            chanx4: int = 4 * chan_indx
+            try:
+                if not self.on2zero[chan_indx]:
+                    self.write(self.__LED0_ON_L  + chanx4, 0)
+                    self.write(self.__LED0_ON_H  + chanx4, 0)
+                    self.on2zero[chan_indx] = True
+                self.write(self.__LED0_OFF_L + chanx4, off & 0xFF)
+                self.write(self.__LED0_OFF_H + chanx4, off >> 8)
+            except:
+                print('WARNING, goto_16_usec() write failed, retrying once...')
+                self.goto_usec(chan_indx, usec_array[chan_indx])
+
+
 
 def __test_pca() -> None:
     """Do a Hello World test to verify everything is working."""

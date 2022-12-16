@@ -47,11 +47,11 @@ class Servo:
 				active_list.append(ch_indx)
 
 		if not noi2c:
-			self.pca = PCA9685(smbus_number=smbus_number,
-                                           bus_frequency=200.0,
-					   active_channels=active_list,
-					   clock_correction=0.920)  # FIXME should not be a constant
-
+			self.pca = PCA9685(
+							smbus_number=smbus_number,
+							bus_frequency=60.0,
+							active_channels=active_list,
+							clock_correction=0.920)  # FIXME should not be a constant
 
 	def move_16_radian(self, radians):
 		"""Move all active servos to angles expressed in radians."""
@@ -67,7 +67,6 @@ class Servo:
 		usecs = (self.slope * radians) + self.intercept
 		self.pca.goto_16_usec(usecs)
 
-
 	def move_radian(self, channel_number, radian):
 		"""Move a servo to an angle expressed in radians."""
 
@@ -75,13 +74,11 @@ class Servo:
 		usec_clipped = min(max(usec, self.lower_limit[channel_number]), self.upper_limit[channel_number])
 		self.pca.goto_usec(channel_number, usec_clipped)
 
-
 	def move_radian_nolimit(self, channel_number, radian):
 		"""Move a servo to an angle expressed in radians, with no limit checks."""
 
 		usec = (self.slope[channel_number] * radian) + self.intercept[channel_number]
 		self.pca.goto_usec(channel_number, usec)
-
 
 	def move_usec(self, channel_number, usec):
 		"""Move a servo to an angle expressed in microseconds, with no limit checks."""
